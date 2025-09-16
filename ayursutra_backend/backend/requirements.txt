@@ -1,0 +1,15 @@
+Django
+djangorestframework
+django-cors-headers
+djangorestframework-simplejwt
+PyJWT
+psycopg2-binary
+python-dotenv
+Pillow
+transformers
+sentence-transformers
+torch
+scikit-learn
+gunicorn
+whitenoise
+uvicorn
