@@ -5,8 +5,67 @@ from rest_framework.permissions import AllowAny
 from django.utils.timezone import now
 from datetime import timedelta
 from .models import Doctor
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth import authenticate, get_user_model
 import random
 import re
+User = get_user_model()
+
+class UserRegisterView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        data = request.data
+        username = data.get("username")
+        email = data.get("email", "")
+        phone = data.get("phone", "")
+        password = data.get("password")
+        first_name = data.get("first_name", "")
+        last_name = data.get("last_name", "")
+        role = data.get("role", "patient")  # default to patient
+
+        if not username or not password:
+            return Response({"error": "Username and password required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(username=username).exists():
+            return Response({"error": "Username already exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.create(
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone=phone,
+            role=role,
+            password=make_password(password),  # 🔐 hash before saving
+        )
+
+        return Response(
+            {"message": "User registered successfully", "id": user.id, "username": user.username},
+            status=status.HTTP_201_CREATED,
+        )
+
+
+
+class UserLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        data = request.data
+        username = data.get("username")
+        password = data.get("password")
+
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            return Response(
+                {
+                    "message": "Login successful",
+                    "user": {"id": user.id, "username": user.username, "email": user.email, "phone": user.phone}
+                },
+                status=status.HTTP_200_OK,
+            )
+        else:
+            return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
 class AgenticAIView(APIView):
     permission_classes = [AllowAny]

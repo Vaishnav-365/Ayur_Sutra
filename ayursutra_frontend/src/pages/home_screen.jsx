@@ -15,11 +15,28 @@ export default function AyurSutra() {
   const [loading, setLoading] = useState(false);
   const [sessions, setSessions] = useState([]);
   const [mounted, setMounted] = useState(false);
+  const [showAuth, setShowAuth] = useState(false); // controls popup
+  const [user, setUser] = useState(null);
+  const [isSignup, setIsSignup] = useState(false);
+  const [username, setUsername] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [role, setRole] = useState("patient");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     // slight delay so mount animations look smoother
     const t = setTimeout(() => setMounted(true), 60);
     return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
   }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -82,6 +99,24 @@ export default function AyurSutra() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#051c14] via-[#0d2e23] to-[#12382c] relative overflow-hidden text-white">
+      {/* Top-right Login/Logout */}
+      <div className="absolute top-6 right-8 z-20">
+        {user ? (
+          <button
+            onClick={() => setUser(null)} // logout
+            className="bg-gradient-to-r from-red-600 to-rose-700 px-5 py-2 rounded-xl font-bold text-white shadow-md hover:opacity-90"
+          >
+            Logout
+          </button>
+        ) : (
+          <button
+            onClick={() => setShowAuth(true)}
+            className="bg-gradient-to-r from-green-600 to-emerald-700 px-5 py-2 rounded-xl font-bold text-white shadow-md hover:opacity-90"
+          >
+            Login / Signup
+          </button>
+        )}
+      </div>
       {/* animated gradient blobs (background) */}
       <motion.div className="absolute inset-0 pointer-events-none" aria-hidden>
         <motion.div
@@ -304,6 +339,171 @@ export default function AyurSutra() {
         <motion.div variants={itemVariants} className="mt-12 text-center">
           <p className="text-green-300/80">Powered by AI technology for personalized Ayurvedic care</p>
         </motion.div>
+        {/* Auth Modal */}
+      {showAuth && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-green-900/90 p-8 rounded-3xl shadow-2xl border border-green-500/30 w-full max-w-md relative">
+            {/* Close button */}
+            <button
+              onClick={() => setShowAuth(false)}
+              className="absolute top-3 right-3 text-green-300 hover:text-white"
+            >
+              ✕
+            </button>
+
+            <h2 className="text-2xl font-bold text-center text-green-100 mb-6">
+              Login / Signup
+            </h2>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+
+                if (isSignup) {
+                  // --- SIGNUP ---
+                  try {
+                    const response = await fetch("http://127.0.0.1:8000/api/user/register/", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        username,
+                        first_name: firstName,
+                        last_name: lastName,
+                        email,
+                        phone,
+                        role,
+                        password,
+                      }),
+                    });
+
+                    if (!response.ok) throw new Error("Signup failed");
+
+                    alert("✅ Signup successful! Please login.");
+                    setIsSignup(false);
+                  } catch (err) {
+                    alert("Signup failed: " + err.message);
+                  }
+                } else {
+                  // --- LOGIN ---
+                  try {
+                    const response = await fetch("http://127.0.0.1:8000/api/user/login/", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ username, password }),
+                    });
+
+                    if (!response.ok) throw new Error("Login failed");
+
+                    const data = await response.json();
+                    localStorage.setItem("user", JSON.stringify(data.user));
+                    setUser(data.user);
+                    setShowAuth(false);
+                  } catch (err) {
+                    alert("Login failed: " + err.message);
+                  }
+                }
+              }}
+              className="space-y-4"
+            >
+              {isSignup ? (
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-green-200 mb-2">Username</label>
+                    <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+                      className="w-full p-3 bg-green-950/30 border border-green-400/30 rounded-2xl focus:ring-2 focus:ring-green-400 text-green-100 placeholder-gray-400"
+                      placeholder="Enter username"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-green-200 mb-2">First Name</label>
+                    <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)}
+                      className="w-full p-3 bg-green-950/30 border border-green-400/30 rounded-2xl focus:ring-2 focus:ring-green-400 text-green-100 placeholder-gray-400"
+                      placeholder="Enter first name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-green-200 mb-2">Last Name</label>
+                    <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)}
+                      className="w-full p-3 bg-green-950/30 border border-green-400/30 rounded-2xl focus:ring-2 focus:ring-green-400 text-green-100 placeholder-gray-400"
+                      placeholder="Enter last name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-green-200 mb-2">Email</label>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                      className="w-full p-3 bg-green-950/30 border border-green-400/30 rounded-2xl focus:ring-2 focus:ring-green-400 text-green-100 placeholder-gray-400"
+                      placeholder="Enter email"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-green-200 mb-2">Phone</label>
+                    <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)}
+                      className="w-full p-3 bg-green-950/30 border border-green-400/30 rounded-2xl focus:ring-2 focus:ring-green-400 text-green-100 placeholder-gray-400"
+                      placeholder="Enter phone"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-green-200 mb-2">Role</label>
+                    <select value={role} onChange={(e) => setRole(e.target.value)}
+                      className="w-full p-3 bg-green-950/30 border border-green-400/30 rounded-2xl focus:ring-2 focus:ring-green-400 text-green-100"
+                    >
+                      <option value="patient" className="bg-white text-black">Patient</option>
+                      <option value="doctor" className="bg-white text-black">Doctor</option>
+                      <option value="admin" className="bg-white text-black">Admin</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-green-200 mb-2">Password</label>
+                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                      className="w-full p-3 bg-green-950/30 border border-green-400/30 rounded-2xl focus:ring-2 focus:ring-green-400 text-green-100 placeholder-gray-400"
+                      placeholder="Enter password"
+                    />
+                  </div>
+                </div>
+              ) : (
+                // Login form
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-green-200 mb-2">Username</label>
+                    <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+                      className="w-full p-3 bg-green-950/30 border border-green-400/30 rounded-2xl focus:ring-2 focus:ring-green-400 text-green-100 placeholder-gray-400"
+                      placeholder="Enter username"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-green-200 mb-2">Password</label>
+                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                      className="w-full p-3 bg-green-950/30 border border-green-400/30 rounded-2xl focus:ring-2 focus:ring-green-400 ttext-green-100 placeholder-gray-400"
+                      placeholder="Enter password"
+                    />
+                  </div>
+                </div>
+              )}
+              <button
+                type="submit"
+                className="w-full bg-gradient-to-r from-green-700 via-emerald-700 to-teal-700 text-white font-bold py-3 px-5 rounded-2xl hover:opacity-90"
+              >
+                {isSignup ? "Signup" : "Login"}
+              </button>
+
+              <p className="text-center text-green-300 mt-4">
+                {isSignup ? "Already have an account?" : "Don’t have an account?"}{" "}
+                <button type="button" onClick={() => setIsSignup(!isSignup)} className="underline">
+                  {isSignup ? "Login" : "Signup"}
+                </button>
+              </p>
+            </form>
+
+          </div>
+        </div>
+      )}
       </motion.main>
     </div>
   );
