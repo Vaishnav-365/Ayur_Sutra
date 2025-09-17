@@ -32,8 +32,10 @@ export default function AyurSutra() {
     try {
       const response = await fetch("http://127.0.0.1:8000/api/agentic-ai/", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form), // contains { name, problem, priority }
       });
 
       if (!response.ok) throw new Error("Failed to fetch recommendations");
